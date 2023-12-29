@@ -21,15 +21,16 @@ browser.get("https://www.oliveyoung.co.kr/store/display/getMCategoryList.do?disp
 
 from selenium.webdriver.common.by import By
 
-element_brand = browser.find_element(by=By.CSS_SELECTOR, value="span.tx_brand")
-element_title = browser.find_element(by=By.CSS_SELECTOR, value="p.tx_name")
-img = browser.find_element(by=By.CSS_SELECTOR, value="#Contents > ul:nth-child(7) > li.flag > div > a > img")
-element_img = img.get_attribute('src')
-element_price = browser.find_element(by=By.CSS_SELECTOR, value="span.tx_num")
+
 
 item = browser.find_elements(by=By.CSS_SELECTOR, value = "div.prd_info")
 for i in item:
-    i.click() 
+    element_brand = browser.find_element(by=By.CSS_SELECTOR, value="#moveBrandShop")
+    element_title = browser.find_element(by=By.CSS_SELECTOR, value="p.prd_name")
+    img = browser.find_element(by=By.CSS_SELECTOR, value="#mainImg")
+    element_img = img.get_attribute('src')
+    element_price = browser.find_element(by=By.CSS_SELECTOR, value="span.price-2")
+
     try : 
         element_writer = i.find_element(by=By.CSS_SELECTOR, value=".info_user")
         element_writer = element_writer.text
@@ -51,8 +52,6 @@ for i in item:
     except : 
         element_comments = ""
     pass
-
+page = []
 browser.find_element(by=By.CSS_SELECTOR, value="div.pageing > a").click()
 time.sleep(3)
-    
-    browser.back()
