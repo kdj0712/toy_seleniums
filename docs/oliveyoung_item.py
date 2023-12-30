@@ -1,26 +1,14 @@
-# 상품 품목 리스트 긁어올 항목
-# 1) 브랜드
-# 2) 상품명
-# 3) 썸네일 이미지
-# 4) 가격(현판매가)
-
-# 리뷰에 긁어올 항목
-# 리스트명 : review
-# 1) 닉네임
-# 2) 별점
-# 3) 옵션
-# 4) 코멘트
-
-# * 웹 크롤링 동작
-from selenium import webdriver
-import time
-# - chrome browser 열기
-browser = webdriver.Chrome()
-# - 주소 입력
-browser.get("https://www.oliveyoung.co.kr/store/goods/getGoodsDetail.do?goodsNo=A000000184922&dispCatNo=1000001001200040001&trackingCd=Cat1000001001200040001_Small&t_page=%EC%B9%B4%ED%85%8C%EA%B3%A0%EB%A6%AC%EA%B4%80&t_click=%EB%B2%A0%EC%9D%B4%EC%8A%A4/%ED%83%91%EC%BD%94%ED%8A%B8_%EC%86%8C_%EB%B2%A0%EC%9D%B4%EC%8A%A4/%ED%83%91%EC%BD%94%ED%8A%B8__%EC%83%81%ED%92%88%EC%83%81%EC%84%B8&t_number=1")
+def Connect(): # 전체 과정을 통합한 function의 이름으로 Connect라는 이름을 지정한다
+    from pymongo import MongoClient  #몽고 DB 콤파스를 Python 과 연동시킴
+    mongoClient = MongoClient("mongodb://192.168.10.239:27017") # 몽고 DB 콤파스의 포트에 연결하는 변수 지정
+    database = mongoClient["gatheringdatas"] # 해당 포트에 접속해서 database에 연결
+    first_collection = database['items']
+    second_collection = database['olive_coments']
+    return first_collection,second_collection
 
 from selenium.webdriver.common.by import By
-def get_item():
+def get_item(browser,first_collection,second_collection):
+    import time
     item = browser.find_elements(by=By.CSS_SELECTOR, value = "#Contents > div.prd_detail_box.renew")
     items = []
     for i in item:
@@ -39,53 +27,73 @@ def get_item():
                       "title" : title,
                       "element_img" : element_img,
                       "price" : price})
+        for item in range(len(items)):
+            first_collections = first_collection.insert_one({
+                '브랜드' : brand,
+                '품목명' : title,
+                '이미지 링크' : element_img,
+                '판매가' : price
+            })
+            items_id = []
+            items_id = first_collections.inserted_id
+    browser.find_element(by=By.CSS_SELECTOR, value = "#reviewInfo").click()
+    pass
+    get_review(browser,items_id,second_collection)  
+    pass
+    time.sleep(3)
+    return items_id
 
-        review_click = browser.find_element(by=By.CSS_SELECTOR, value = "#reviewInfo").click()
-        time.sleep(3)
-        reviews = [ ]
-        review = browser.find_elements(by=By.CSS_SELECTOR, value="#gdasList > li")
+def get_review(browser,items_id,second_collection):
+    import time
+    reviews = []    
+    review = browser.find_elements(by=By.CSS_SELECTOR, value="#gdasList > li")
+    time.sleep(3)  
+    for x in review:
+        try : 
+            element_writer = x.find_element(by=By.CSS_SELECTOR, value="div.user.clrfix")
+            writer = element_writer.text
+        except : 
+            writer = ""
+        try : 
+            element_grade = x.find_element(by=By.CSS_SELECTOR, value="span.review_point > span.point")
+            grade = element_grade.text
+        except : 
+            grade = ""
+        try : 
+            element_option = x.find_element(by=By.CSS_SELECTOR, value="p.item_option")
+            option = element_option.text
+        except : 
+            option = ""
+        try : 
+            element_comments = x.find_element(by=By.CSS_SELECTOR, value="div.txt_inner")
+            comments = element_comments.text
+        except : 
+            comments = ""
+        pass
+        reviews.append({"품목ID" : items_id,
+                        "writer" : writer,
+                        "grade" : grade,
+                        "option" : option,  
+                        "comments" : comments})
+    for review in reviews:
+        items_id = review.get( "품목ID" , '기본값')
+        writer = review.get('writer', '기본값').replace('\n', '')
+        grade = review.get('grade','기본값').replace('\n', '')
+        option = review.get('option','기본값').replace('\n', '')
+        comments = review.get('comments','기본값').replace('\n', '')
 
-        for x in range(len(review)):
-            review = browser.find_elements(by=By.CSS_SELECTOR, value="#gdasList > li")
-            try : 
-                element_writer = review.find_element(by=By.CSS_SELECTOR, value="div.user.clrfix")
-                writer = element_writer.text
-            except : 
-                writer = ""
-            try : 
-                element_grade = review.find_element(by=By.CSS_SELECTOR, value="span.review_point > span.point")
-                grade = element_grade.text
-            except : 
-                grade = ""
-            try : 
-                element_option = review.find_element(by=By.CSS_SELECTOR, value="p.item_option")
-                option = element_option.text
-            except : 
-                option = ""
-            try : 
-                element_comments = review.find_element(by=By.CSS_SELECTOR, value="div.txt_inner")
-                comments = element_comments.text
-            except : 
-                comments = ""
-            pass
-
-            print(writer)
-            print(grade)
-            print(option)
-            print(comments)
+        second_collection.insert_one({
+            "품목ID" : items_id,
+            '작성자' : writer,
+            '점수' : grade,
+            '옵션' : option,
+            '댓글' : comments
+            })
+    return 
 
 
-
-    reviews.append({"writer" : writer,
-                    "grade" : grade,
-                    "option" : option,  
-                    "comments" : comments})
-    return items,reviews
-time.sleep(3)
-
-
-get_item()
-
+if __name__ == "__main__":
+    get_item(browser,first_collection)
 # for review in reviews:
  
 #     # # function이 동작하면서 반환된 내용을 result라는 변수에 담아서 그 갯수만큼 반복적으로 실행하도록 구문을 작성한다.
