@@ -7,6 +7,8 @@ def Connect(): # 전체 과정을 통합한 function의 이름으로 Connect라�
     return first_collection,second_collection
 
 from selenium.webdriver.common.by import By
+
+# 상품 브랜드명, 상품명, 이미지url, 가격 등 정보 가져오는 함수 실행
 def get_item(browser,first_collection,second_collection):
     import time
     item = browser.find_elements(by=By.CSS_SELECTOR, value = "#Contents > div.prd_detail_box.renew")
@@ -43,6 +45,7 @@ def get_item(browser,first_collection,second_collection):
     time.sleep(3)
     return items_id
 
+# 리뷰(작성자, 별점, 옵션정보, 내용 등) 정보 가져오는 함수 실행
 def get_review(browser,items_id,second_collection):
     import time
     reviews = []    
